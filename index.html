@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <title>Local Meetup</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQOc2/Jw9ijmr6Pv42tR1+4o17FwI4M=" crossorigin="">
+    <link rel="stylesheet" href="styles.css?v=12">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="phone" aria-label="Local Meetup App">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Heute in deiner Naehe</p>
+            <h1>Local Meetup</h1>
+          </div>
+          <button class="icon-button" id="profileButton" type="button" aria-label="Profil wechseln" title="Profil wechseln">
+            <span data-lucide="user-round"></span>
+          </button>
+        </header>
+
+        <div class="toolbar" aria-label="Event Filter">
+          <button class="chip active" type="button" data-filter="all">Alle</button>
+          <button class="chip" type="button" data-filter="sport">Sport</button>
+          <button class="chip" type="button" data-filter="food">Food</button>
+          <button class="chip" type="button" data-filter="culture">Kultur</button>
+          <button class="chip" type="button" data-filter="study">Lernen</button>
+        </div>
+
+        <section class="map-wrap">
+          <div id="map" class="map" aria-label="Karte mit Meetups"></div>
+          <div class="offline-map" id="offlineMap" aria-hidden="true">
+            <div class="road road-a"></div>
+            <div class="road road-b"></div>
+            <div class="road road-c"></div>
+            <div class="water"></div>
+          </div>
+          <form class="map-action map-search" id="mapSearchForm" role="search">
+            <span data-lucide="search"></span>
+            <input id="mapSearchInput" type="search" placeholder="Ort oder Meetup suchen" autocomplete="off" aria-label="Ort oder Meetup suchen">
+            <button id="mapSearchButton" type="button" aria-label="Suchen">
+              <span data-lucide="arrow-right"></span>
+            </button>
+          </form>
+          <button class="map-action locate-button" id="locateButton" type="button" aria-label="Standort suchen" title="Standort suchen">
+            <span data-lucide="locate-fixed"></span>
+          </button>
+          <div class="map-action radar-control" aria-label="Meetups Radar">
+            <div class="radar-copy">
+              <span>Radar</span>
+              <output id="radarValue">20 km</output>
+            </div>
+            <input id="radarInput" type="range" min="2" max="200" step="1" value="20" aria-label="Meetup-Radius in Kilometern">
+          </div>
+          <button class="map-action create-fab" id="createButton" type="button">
+            <span data-lucide="map-pin-plus"></span>
+            Event
+          </button>
+        </section>
+
+        <section class="sheet" aria-label="Events">
+          <button class="sheet-handle" id="sheetHandle" type="button" aria-label="Meetups hochziehen oder herunterziehen"></button>
+          <div class="sheet-header">
+            <div>
+              <h2 id="sheetTitle">Meetups</h2>
+              <p id="statusLine">3 Events rund um Hamburg</p>
+            </div>
+            <button class="icon-button" id="resetButton" type="button" aria-label="Demo zuruecksetzen" title="Demo zuruecksetzen">
+              <span data-lucide="refresh-cw"></span>
+            </button>
+          </div>
+          <div class="event-list" id="eventList"></div>
+        </section>
+      </section>
+    </main>
+
+    <dialog class="modal" id="eventDialog">
+      <form method="dialog" class="modal-panel" id="eventForm">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Neuer Treffpunkt</p>
+            <h2>Event platzieren</h2>
+          </div>
+          <button class="icon-button" id="closeDialogButton" type="button" aria-label="Schliessen" title="Schliessen">
+            <span data-lucide="x"></span>
+          </button>
+        </div>
+
+        <label>
+          Titel
+          <input id="titleInput" name="title" maxlength="48" required placeholder="z.B. Basketball im Park">
+        </label>
+
+        <div class="form-row">
+          <label>
+            Kategorie
+            <select id="categoryInput" name="category">
+              <option value="sport">Sport</option>
+              <option value="food">Food</option>
+              <option value="culture">Kultur</option>
+              <option value="study">Lernen</option>
+            </select>
+          </label>
+          <label>
+            Start
+            <input id="timeInput" name="time" type="time" required>
+          </label>
+        </div>
+
+        <label>
+          Plaetze
+          <input id="capacityInput" name="capacity" type="range" min="2" max="24" value="6">
+          <span class="range-value"><span id="capacityValue">6</span> Leute</span>
+        </label>
+
+        <label>
+          Kurzinfo
+          <textarea id="descriptionInput" name="description" maxlength="140" rows="3" placeholder="Was passiert vor Ort?"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button class="secondary-button" id="pickPinButton" type="button">
+            <span data-lucide="crosshair"></span>
+            Pin setzen
+          </button>
+          <button class="primary-button" value="default" type="submit">
+            <span data-lucide="sparkles"></span>
+            Veröffentlichen
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="eventCardTemplate">
+      <article class="event-card">
+        <button class="event-main" type="button">
+          <span class="category-dot"></span>
+          <span class="event-copy">
+            <span class="event-title"></span>
+            <span class="event-meta"></span>
+            <span class="attendee-strip"></span>
+          </span>
+        </button>
+        <button class="join-button" type="button"></button>
+      </article>
+    </template>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="app.js?v=12"></script>
+  </body>
+</html>
