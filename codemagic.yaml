@@ -1,0 +1,59 @@
+workflows:
+  ios-simulator:
+    name: Local Meetup iOS Simulator
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      node: lts
+      xcode: latest
+      cocoapods: default
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/node_modules
+        - $HOME/Library/Caches/CocoaPods
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci || npm install
+      - name: Build web app
+        script: |
+          npm run build
+      - name: Create iOS project if needed
+        script: |
+          if [ ! -d ios ]; then
+            npx cap add ios
+          fi
+      - name: Sync web assets into iOS
+        script: |
+          npx cap sync ios
+      - name: Add iOS location permission text
+        script: |
+          PLIST="$CM_BUILD_DIR/ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Local Meetup nutzt deinen Standort, um Meetups in deiner Naehe zu finden." "$PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSLocationWhenInUseUsageDescription Local Meetup nutzt deinen Standort, um Meetups in deiner Naehe zu finden." "$PLIST"
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+      - name: Build unsigned simulator app
+        script: |
+          xcodebuild build \
+            -workspace "$CM_BUILD_DIR/$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath "$CM_BUILD_DIR/ios/App/build" \
+            CODE_SIGNING_ALLOWED=NO
+    artifacts:
+      - ios/App/build/Build/Products/**/*.app
+      - /tmp/xcodebuild_logs/*.log
