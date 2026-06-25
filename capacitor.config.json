@@ -1,0 +1,9 @@
+{
+  "appId": "com.timbo2701.localmeetup",
+  "appName": "Local Meetup",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "automatic"
+  }
+}
