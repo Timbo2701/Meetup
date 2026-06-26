@@ -37,23 +37,44 @@ body {
 }
 
 .topbar {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-top: 12px;
+  padding-bottom: 10px;
+  background: rgba(13, 19, 17, 0.82);
 }
 
 .toolbar {
-  top: calc(env(safe-area-inset-top, 0px) + 82px);
+  top: 80px;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .map-search {
-  top: calc(env(safe-area-inset-top, 0px) + 138px);
+  top: 136px;
 }
 
 .locate-button {
-  top: calc(env(safe-area-inset-top, 0px) + 140px);
+  top: 138px;
 }
 
 .radar-control {
-  top: calc(env(safe-area-inset-top, 0px) + 194px);
+  top: 190px;
+  touch-action: pan-x;
+  pointer-events: auto;
+}
+
+.radar-control input {
+  min-height: 30px;
+  touch-action: pan-x;
+  pointer-events: auto;
+}
+
+.sheet-header {
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet.dragging .sheet-header {
+  cursor: grabbing;
 }
 
 .map-wrap,
