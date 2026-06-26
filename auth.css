@@ -1,0 +1,117 @@
+.auth-dialog {
+  width: min(100% - 28px, 410px);
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  color: var(--ink);
+  background: transparent;
+}
+
+.auth-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(7px);
+}
+
+.auth-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #111916;
+  box-shadow: var(--shadow);
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.auth-close {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: #18221e;
+}
+
+.auth-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.auth-avatar-preview {
+  width: 74px;
+  height: 74px;
+  flex: 0 0 74px;
+  overflow: hidden;
+  border: 3px solid rgba(238, 244, 239, 0.82);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #6ea58f, #26332e);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+.auth-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.auth-avatar-actions {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.auth-file-button {
+  width: fit-content;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 800;
+  background: #18221e;
+}
+
+.auth-file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.auth-save {
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 900;
+  background: var(--accent);
+}
+
+.avatar-custom {
+  background: #111916;
+}
