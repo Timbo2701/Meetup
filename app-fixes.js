@@ -1,8 +1,8 @@
 let mobileSheetLockReleased = false;
 
 (function installMobileInteractionFixes() {
-  document.documentElement.dataset.mobileFixVersion = "22";
-  console.info("Local Meetup mobile fixes v22 active");
+  document.documentElement.dataset.mobileFixVersion = "23";
+  console.info("Local Meetup mobile fixes v23 active");
 
   const labels = {
     sport: "🏀 Sport",
@@ -28,6 +28,7 @@ let mobileSheetLockReleased = false;
   });
 
   installInitialSheetLock();
+  installSheetCeiling();
   installEventButtonFallback();
   installRadarHitTarget();
   installMapLongPressFallback();
@@ -36,6 +37,32 @@ let mobileSheetLockReleased = false;
   hardenExistingMapImages();
   render();
 })();
+
+function installSheetCeiling() {
+  getSheetMaxHeight = function getMobileSheetMaxHeight() {
+    const phoneHeight = phone.getBoundingClientRect().height || window.innerHeight;
+    const phoneTop = phone.getBoundingClientRect().top || 0;
+    const radarRect = document.querySelector(".radar-control")?.getBoundingClientRect();
+    const radarBottom = radarRect ? radarRect.bottom - phoneTop : 292;
+    const minTop = Math.max(292, radarBottom + 18);
+    const byControls = phoneHeight - minTop;
+    const byRatio = phoneHeight * 0.64;
+    const byChrome = phoneHeight - 252;
+    const capped = Math.min(byControls, byRatio, byChrome);
+    return Math.round(Math.max(SHEET_COLLAPSED, capped));
+  };
+
+  const clamp = () => {
+    const max = getSheetMaxHeight();
+    if (state.sheetHeight > max) {
+      setSheetHeight(max, false);
+    }
+  };
+
+  [0, 120, 360, 900, 1600].forEach((delay) => window.setTimeout(clamp, delay));
+  window.visualViewport?.addEventListener("resize", () => window.setTimeout(clamp, 80));
+  window.addEventListener("resize", () => window.setTimeout(clamp, 80));
+}
 
 function installInitialSheetLock() {
   const lockClass = "mobile-sheet-lock";
