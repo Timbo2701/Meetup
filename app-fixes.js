@@ -1,4 +1,7 @@
 (function installMobileInteractionFixes() {
+  document.documentElement.dataset.mobileFixVersion = "18";
+  console.info("Local Meetup mobile fixes v18 active");
+
   const labels = {
     sport: "🏀 Sport",
     food: "🍜 Food",
