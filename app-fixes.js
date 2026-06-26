@@ -25,15 +25,30 @@
   makeRadarTouchSafe();
   makeSheetHeaderDraggable();
   installLongPressCreate();
+  stabilizeMobileViewport();
   render();
 })();
+
+function stabilizeMobileViewport() {
+  const refresh = () => {
+    state.map?.invalidateSize?.({ animate: false, pan: false });
+    setSheetHeight(state.sheetHeight || SHEET_MIN, false);
+  };
+
+  [80, 250, 700, 1400].forEach((delay) => window.setTimeout(refresh, delay));
+  window.visualViewport?.addEventListener("resize", () => window.setTimeout(refresh, 80));
+  window.visualViewport?.addEventListener("scroll", () => window.setTimeout(refresh, 80));
+}
 
 function makeRadarTouchSafe() {
   const radar = document.querySelector(".radar-control");
   const input = document.querySelector("#radarInput");
   if (!radar || !input) return;
 
+  let isAdjusting = false;
+
   const releaseMap = () => {
+    isAdjusting = false;
     state.map?.dragging?.enable?.();
     state.map?.touchZoom?.enable?.();
     state.map?.doubleClickZoom?.enable?.();
@@ -49,6 +64,19 @@ function makeRadarTouchSafe() {
     if (event.touches?.length) return event.touches[0].clientX;
     if (event.changedTouches?.length) return event.changedTouches[0].clientX;
     return event.clientX;
+  };
+
+  const clientYFromEvent = (event) => {
+    if (event.touches?.length) return event.touches[0].clientY;
+    if (event.changedTouches?.length) return event.changedTouches[0].clientY;
+    return event.clientY;
+  };
+
+  const isInsideRadar = (event) => {
+    const rect = radar.getBoundingClientRect();
+    const x = clientXFromEvent(event);
+    const y = clientYFromEvent(event);
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
   };
 
   const setRadarValue = (clientX) => {
@@ -67,7 +95,9 @@ function makeRadarTouchSafe() {
   };
 
   const handleStartOrMove = (event) => {
-    if (event.type === "pointermove" && event.buttons === 0) return;
+    if (event.type === "pointermove" && event.buttons === 0 && !isAdjusting) return;
+    if (!isAdjusting && !isInsideRadar(event)) return;
+    isAdjusting = true;
     event.preventDefault();
     stop(event);
     holdMap();
@@ -86,6 +116,11 @@ function makeRadarTouchSafe() {
 
   radar.addEventListener("pointerdown", handleStartOrMove, true);
   input.addEventListener("pointerdown", handleStartOrMove, true);
+
+  document.addEventListener("pointerdown", handleStartOrMove, true);
+  document.addEventListener("pointermove", handleStartOrMove, true);
+  document.addEventListener("touchstart", handleStartOrMove, { capture: true, passive: false });
+  document.addEventListener("touchmove", handleStartOrMove, { capture: true, passive: false });
 
   ["pointerup", "pointercancel", "touchend", "touchcancel", "mouseup"].forEach((eventName) => {
     window.addEventListener(eventName, releaseMap, { passive: true });
