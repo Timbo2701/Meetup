@@ -1,6 +1,6 @@
 (function installMobileInteractionFixes() {
-  document.documentElement.dataset.mobileFixVersion = "20";
-  console.info("Local Meetup mobile fixes v20 active");
+  document.documentElement.dataset.mobileFixVersion = "21";
+  console.info("Local Meetup mobile fixes v21 active");
 
   const labels = {
     sport: "🏀 Sport",
@@ -28,9 +28,25 @@
   installRadarHitTarget();
   installMapLongPressFallback();
   stabilizeMobileViewport();
+  forceInitialSheetLayout();
   hardenExistingMapImages();
   render();
 })();
+
+function forceInitialSheetLayout() {
+  const apply = () => {
+    state.sheetHeight = SHEET_MIN;
+    sheet.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
+    phone.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
+    sheet.classList.add("compact");
+    sheet.classList.remove("expanded", "dragging");
+    state.map?.invalidate?.();
+    state.map?.invalidateSize?.({ animate: false, pan: false });
+  };
+
+  [0, 50, 160, 360, 800, 1400].forEach((delay) => window.setTimeout(apply, delay));
+  apply();
+}
 
 function installRadarHitTarget() {
   const radar = document.querySelector(".radar-control");
@@ -110,6 +126,7 @@ function installMapLongPressFallback() {
 
   let timer = null;
   let start = null;
+  let armed = false;
 
   const isControl = (target) =>
     target.closest(".map-action, .leaflet-control, .leaflet-marker-icon, .meetup-marker, .meetup-popup");
@@ -118,12 +135,22 @@ function installMapLongPressFallback() {
     window.clearTimeout(timer);
     timer = null;
     start = null;
+    armed = false;
   };
 
   const openAt = (clientX, clientY) => {
     state.pickMode = false;
     pickPinButton.classList.remove("active");
     openCreateDialog(screenPointToLatLng(clientX, clientY, 15));
+  };
+
+  const arm = (clientX, clientY) => {
+    armed = false;
+    start = { x: clientX, y: clientY, at: Date.now() };
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      armed = true;
+    }, 520);
   };
 
   document.addEventListener(
@@ -143,12 +170,7 @@ function installMapLongPressFallback() {
     (event) => {
       if (!event.touches.length || isControl(event.target)) return;
       const touch = event.touches[0];
-      start = { x: touch.clientX, y: touch.clientY };
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        openAt(start.x, start.y);
-        clear();
-      }, 850);
+      arm(touch.clientX, touch.clientY);
     },
     { capture: true, passive: true },
   );
@@ -166,7 +188,17 @@ function installMapLongPressFallback() {
   );
 
   ["touchend", "touchcancel", "pointercancel"].forEach((eventName) => {
-    mapNode.addEventListener(eventName, clear, true);
+    mapNode.addEventListener(
+      eventName,
+      (event) => {
+        if (eventName === "touchend" && start && (armed || Date.now() - start.at > 520)) {
+          const point = event.changedTouches?.[0] || start;
+          openAt(point.clientX ?? start.x, point.clientY ?? start.y);
+        }
+        clear();
+      },
+      true,
+    );
   });
 }
 
@@ -196,7 +228,6 @@ function hardenExistingMapImages() {
 function stabilizeMobileViewport() {
   const refresh = () => {
     state.map?.invalidateSize?.({ animate: false, pan: false });
-    setSheetHeight(state.sheetHeight || SHEET_MIN, false);
   };
 
   [80, 250, 700, 1400].forEach((delay) => window.setTimeout(refresh, delay));
