@@ -64,7 +64,6 @@ function makeRadarTouchSafe() {
 
   const stop = (event) => {
     event.stopPropagation();
-    event.stopImmediatePropagation?.();
   };
 
   const handleStartOrMove = (event) => {
