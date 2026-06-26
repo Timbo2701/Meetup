@@ -1,8 +1,9 @@
 let mobileSheetLockReleased = false;
+const MOBILE_SHEET_MIN = 102;
 
 (function installMobileInteractionFixes() {
-  document.documentElement.dataset.mobileFixVersion = "23";
-  console.info("Local Meetup mobile fixes v23 active");
+  document.documentElement.dataset.mobileFixVersion = "24";
+  console.info("Local Meetup mobile fixes v24 active");
 
   const labels = {
     sport: "🏀 Sport",
@@ -28,8 +29,10 @@ let mobileSheetLockReleased = false;
   });
 
   installInitialSheetLock();
+  installCompactSheetChrome();
   installSheetCeiling();
   installEventButtonFallback();
+  installRefreshButtonFallback();
   installRadarHitTarget();
   installMapLongPressFallback();
   stabilizeMobileViewport();
@@ -37,6 +40,54 @@ let mobileSheetLockReleased = false;
   hardenExistingMapImages();
   render();
 })();
+
+function installCompactSheetChrome() {
+  if (!document.querySelector("#compactSheetChromeStyles")) {
+    const style = document.createElement("style");
+    style.id = "compactSheetChromeStyles";
+    style.textContent = `
+      .sheet {
+        min-height: ${MOBILE_SHEET_MIN}px !important;
+        padding-top: 7px !important;
+      }
+
+      .sheet-handle {
+        margin-bottom: 8px !important;
+      }
+
+      .sheet.compact .sheet-header h2 {
+        line-height: 1.08 !important;
+      }
+
+      .sheet.compact .sheet-header p {
+        margin-top: 3px !important;
+      }
+    `;
+    document.head.append(style);
+  }
+
+  setSheetHeight = function setMobileSheetHeight(height, animate = true) {
+    const max = getSheetMaxHeight();
+    state.sheetHeight = Math.max(MOBILE_SHEET_MIN, Math.min(max, height));
+    sheet.style.setProperty("--sheet-height", `${state.sheetHeight}px`);
+    phone.style.setProperty("--sheet-height", `${state.sheetHeight}px`);
+    sheet.classList.toggle("dragging", !animate);
+    sheet.classList.toggle("compact", state.sheetHeight <= MOBILE_SHEET_MIN + 18);
+    sheet.classList.toggle("expanded", state.sheetHeight > SHEET_COLLAPSED + 80);
+    state.map?.invalidate?.();
+    window.setTimeout(() => state.map?.invalidate?.(), 190);
+  };
+
+  snapSheet = function snapMobileSheet() {
+    const max = getSheetMaxHeight();
+    const mid = Math.min(SHEET_COLLAPSED, max - 90);
+    const points = [MOBILE_SHEET_MIN, mid, max];
+    const nearest = points.reduce((best, point) =>
+      Math.abs(point - state.sheetHeight) < Math.abs(best - state.sheetHeight) ? point : best,
+    );
+    setSheetHeight(nearest);
+  };
+}
 
 function installSheetCeiling() {
   getSheetMaxHeight = function getMobileSheetMaxHeight() {
@@ -73,13 +124,13 @@ function installInitialSheetLock() {
     style.id = "mobileSheetLockStyles";
     style.textContent = `
       html.mobile-sheet-lock .phone {
-        --sheet-height: ${SHEET_MIN}px !important;
+        --sheet-height: ${MOBILE_SHEET_MIN}px !important;
       }
 
       html.mobile-sheet-lock .sheet {
-        height: ${SHEET_MIN}px !important;
-        min-height: ${SHEET_MIN}px !important;
-        max-height: ${SHEET_MIN}px !important;
+        height: ${MOBILE_SHEET_MIN}px !important;
+        min-height: ${MOBILE_SHEET_MIN}px !important;
+        max-height: ${MOBILE_SHEET_MIN}px !important;
         grid-template-rows: auto auto !important;
         overflow: hidden !important;
         transition: none !important;
@@ -94,7 +145,7 @@ function installInitialSheetLock() {
       }
 
       html.mobile-sheet-lock .create-fab {
-        bottom: calc(${SHEET_MIN}px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
+        bottom: calc(${MOBILE_SHEET_MIN}px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
       }
 
       #map,
@@ -134,9 +185,9 @@ function forceInitialSheetLayout() {
   const apply = () => {
     if (mobileSheetLockReleased) return;
 
-    state.sheetHeight = SHEET_MIN;
-    sheet.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
-    phone.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
+    state.sheetHeight = MOBILE_SHEET_MIN;
+    sheet.style.setProperty("--sheet-height", `${MOBILE_SHEET_MIN}px`);
+    phone.style.setProperty("--sheet-height", `${MOBILE_SHEET_MIN}px`);
     sheet.classList.add("compact");
     sheet.classList.remove("expanded", "dragging");
     state.map?.invalidate?.();
@@ -145,6 +196,27 @@ function forceInitialSheetLayout() {
 
   [0, 50, 160, 360, 800, 1400].forEach((delay) => window.setTimeout(apply, delay));
   apply();
+}
+
+function installRefreshButtonFallback() {
+  if (!resetButton) return;
+
+  resetButton.setAttribute("aria-label", "Meetups aktualisieren");
+  resetButton.title = "Meetups aktualisieren";
+
+  resetButton.addEventListener(
+    "click",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      state.activePopupId = null;
+      render();
+      state.map?.invalidate?.();
+      state.map?.invalidateSize?.({ animate: false, pan: false });
+    },
+    true,
+  );
 }
 
 function installEventButtonFallback() {
