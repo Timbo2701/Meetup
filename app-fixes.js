@@ -1,6 +1,6 @@
 (function installMobileInteractionFixes() {
-  document.documentElement.dataset.mobileFixVersion = "21";
-  console.info("Local Meetup mobile fixes v21 active");
+  document.documentElement.dataset.mobileFixVersion = "22";
+  console.info("Local Meetup mobile fixes v22 active");
 
   const labels = {
     sport: "🏀 Sport",
@@ -25,6 +25,8 @@
     if (option) option.textContent = label;
   });
 
+  installInitialSheetLock();
+  installEventButtonFallback();
   installRadarHitTarget();
   installMapLongPressFallback();
   stabilizeMobileViewport();
@@ -33,8 +35,78 @@
   render();
 })();
 
+let mobileSheetLockReleased = false;
+
+function installInitialSheetLock() {
+  const lockClass = "mobile-sheet-lock";
+  document.documentElement.classList.add(lockClass);
+
+  if (!document.querySelector("#mobileSheetLockStyles")) {
+    const style = document.createElement("style");
+    style.id = "mobileSheetLockStyles";
+    style.textContent = `
+      html.mobile-sheet-lock .phone {
+        --sheet-height: ${SHEET_MIN}px !important;
+      }
+
+      html.mobile-sheet-lock .sheet {
+        height: ${SHEET_MIN}px !important;
+        min-height: ${SHEET_MIN}px !important;
+        max-height: ${SHEET_MIN}px !important;
+        grid-template-rows: auto auto !important;
+        overflow: hidden !important;
+        transition: none !important;
+      }
+
+      html.mobile-sheet-lock .sheet .event-list {
+        display: none !important;
+      }
+
+      html.mobile-sheet-lock .sheet .sheet-header {
+        margin-bottom: 0 !important;
+      }
+
+      html.mobile-sheet-lock .create-fab {
+        bottom: calc(${SHEET_MIN}px + max(20px, env(safe-area-inset-bottom, 0px))) !important;
+      }
+
+      #map,
+      #map *,
+      .leaflet-container,
+      .leaflet-container *,
+      .offline-map,
+      .offline-map * {
+        -webkit-touch-callout: none !important;
+        -webkit-user-select: none !important;
+        user-select: none !important;
+      }
+
+      #map img,
+      .leaflet-tile,
+      .osm-dark-tile {
+        pointer-events: none !important;
+        -webkit-user-drag: none !important;
+      }
+    `;
+    document.head.append(style);
+  }
+
+  const unlock = () => {
+    mobileSheetLockReleased = true;
+    document.documentElement.classList.remove(lockClass);
+  };
+
+  [sheetHandle, sheet.querySelector(".sheet-header")].filter(Boolean).forEach((surface) => {
+    ["pointerdown", "touchstart", "mousedown", "click"].forEach((eventName) => {
+      surface.addEventListener(eventName, unlock, { capture: true, passive: true });
+    });
+  });
+}
+
 function forceInitialSheetLayout() {
   const apply = () => {
+    if (mobileSheetLockReleased) return;
+
     state.sheetHeight = SHEET_MIN;
     sheet.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
     phone.style.setProperty("--sheet-height", `${SHEET_MIN}px`);
@@ -46,6 +118,32 @@ function forceInitialSheetLayout() {
 
   [0, 50, 160, 360, 800, 1400].forEach((delay) => window.setTimeout(apply, delay));
   apply();
+}
+
+function installEventButtonFallback() {
+  if (!createButton) return;
+
+  let lastOpen = 0;
+
+  const openFromMapCenter = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+
+    const now = Date.now();
+    if (eventDialog.open || now - lastOpen < 650) return;
+    lastOpen = now;
+
+    state.pickMode = false;
+    pickPinButton.classList.remove("active");
+
+    const center = state.map?.getCenter?.() || state.pendingPin || HAMBURG_CENTER;
+    state.pendingPin = center;
+    openCreateDialog(center);
+  };
+
+  createButton.addEventListener("touchend", openFromMapCenter, { capture: true, passive: false });
+  createButton.addEventListener("click", openFromMapCenter, true);
 }
 
 function installRadarHitTarget() {
