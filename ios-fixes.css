@@ -37,27 +37,27 @@ body {
 }
 
 .topbar {
-  padding-top: 12px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
   padding-bottom: 10px;
   background: rgba(13, 19, 17, 0.82);
 }
 
 .toolbar {
-  top: 80px;
+  top: calc(env(safe-area-inset-top, 0px) + 78px);
   background: transparent;
   backdrop-filter: none;
 }
 
 .map-search {
-  top: 136px;
+  top: calc(env(safe-area-inset-top, 0px) + 132px);
 }
 
 .locate-button {
-  top: 138px;
+  top: calc(env(safe-area-inset-top, 0px) + 134px);
 }
 
 .radar-control {
-  top: 190px;
+  top: calc(env(safe-area-inset-top, 0px) + 186px);
   z-index: 950;
   touch-action: none;
   pointer-events: auto;
