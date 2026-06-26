@@ -1,3 +1,5 @@
+let mobileSheetLockReleased = false;
+
 (function installMobileInteractionFixes() {
   document.documentElement.dataset.mobileFixVersion = "22";
   console.info("Local Meetup mobile fixes v22 active");
@@ -34,8 +36,6 @@
   hardenExistingMapImages();
   render();
 })();
-
-let mobileSheetLockReleased = false;
 
 function installInitialSheetLock() {
   const lockClass = "mobile-sheet-lock";
