@@ -34,12 +34,14 @@ workflows:
         script: |
           echo "Checking dist assets"
           test -f "$CM_BUILD_DIR/dist/app-fixes.js"
-          grep -n "app-fixes.js?v=18" "$CM_BUILD_DIR/dist/index.html"
-          grep -n "mobile fixes v18 active" "$CM_BUILD_DIR/dist/app-fixes.js"
+          grep -n "app.js?v=14" "$CM_BUILD_DIR/dist/index.html"
+          grep -n "app-fixes.js?v=20" "$CM_BUILD_DIR/dist/index.html"
+          grep -n "mobile fixes v20 active" "$CM_BUILD_DIR/dist/app-fixes.js"
           echo "Checking iOS bundled assets"
           test -f "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
-          grep -n "app-fixes.js?v=18" "$CM_BUILD_DIR/ios/App/App/public/index.html"
-          grep -n "mobile fixes v18 active" "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
+          grep -n "app.js?v=14" "$CM_BUILD_DIR/ios/App/App/public/index.html"
+          grep -n "app-fixes.js?v=20" "$CM_BUILD_DIR/ios/App/App/public/index.html"
+          grep -n "mobile fixes v20 active" "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
       - name: Add iOS location permission text
         script: |
           PLIST="$CM_BUILD_DIR/ios/App/App/Info.plist"
@@ -123,12 +125,14 @@ workflows:
         script: |
           echo "Checking dist assets"
           test -f "$CM_BUILD_DIR/dist/app-fixes.js"
-          grep -n "app-fixes.js?v=18" "$CM_BUILD_DIR/dist/index.html"
-          grep -n "mobile fixes v18 active" "$CM_BUILD_DIR/dist/app-fixes.js"
+          grep -n "app.js?v=14" "$CM_BUILD_DIR/dist/index.html"
+          grep -n "app-fixes.js?v=20" "$CM_BUILD_DIR/dist/index.html"
+          grep -n "mobile fixes v20 active" "$CM_BUILD_DIR/dist/app-fixes.js"
           echo "Checking iOS bundled assets"
           test -f "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
-          grep -n "app-fixes.js?v=18" "$CM_BUILD_DIR/ios/App/App/public/index.html"
-          grep -n "mobile fixes v18 active" "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
+          grep -n "app.js?v=14" "$CM_BUILD_DIR/ios/App/App/public/index.html"
+          grep -n "app-fixes.js?v=20" "$CM_BUILD_DIR/ios/App/App/public/index.html"
+          grep -n "mobile fixes v20 active" "$CM_BUILD_DIR/ios/App/App/public/app-fixes.js"
       - name: Add iOS location permission text
         script: |
           PLIST="$CM_BUILD_DIR/ios/App/App/Info.plist"
