@@ -37,27 +37,27 @@ body {
 }
 
 .topbar {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 10px), 54px);
   padding-bottom: 10px;
   background: rgba(13, 19, 17, 0.82);
 }
 
 .toolbar {
-  top: calc(env(safe-area-inset-top, 0px) + 78px);
+  top: max(calc(env(safe-area-inset-top, 0px) + 78px), 118px);
   background: transparent;
   backdrop-filter: none;
 }
 
 .map-search {
-  top: calc(env(safe-area-inset-top, 0px) + 132px);
+  top: max(calc(env(safe-area-inset-top, 0px) + 132px), 172px);
 }
 
 .locate-button {
-  top: calc(env(safe-area-inset-top, 0px) + 134px);
+  top: max(calc(env(safe-area-inset-top, 0px) + 134px), 174px);
 }
 
 .radar-control {
-  top: calc(env(safe-area-inset-top, 0px) + 186px);
+  top: max(calc(env(safe-area-inset-top, 0px) + 186px), 226px);
   z-index: 950;
   touch-action: none;
   pointer-events: auto;
@@ -66,7 +66,7 @@ body {
 .radar-control input {
   min-height: 30px;
   touch-action: none;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .map-action {
