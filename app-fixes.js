@@ -31,44 +31,135 @@
 function makeRadarTouchSafe() {
   const radar = document.querySelector(".radar-control");
   const input = document.querySelector("#radarInput");
-  [radar, input].filter(Boolean).forEach((node) => {
-    ["pointerdown", "pointermove", "mousedown", "touchstart", "touchmove", "click"].forEach((eventName) => {
-      node.addEventListener(eventName, (event) => event.stopPropagation(), { passive: eventName.startsWith("touch") });
-    });
+  if (!radar || !input) return;
+
+  const releaseMap = () => {
+    state.map?.dragging?.enable?.();
+    state.map?.touchZoom?.enable?.();
+    state.map?.doubleClickZoom?.enable?.();
+  };
+
+  const holdMap = () => {
+    state.map?.dragging?.disable?.();
+    state.map?.touchZoom?.disable?.();
+    state.map?.doubleClickZoom?.disable?.();
+  };
+
+  const clientXFromEvent = (event) => {
+    if (event.touches?.length) return event.touches[0].clientX;
+    if (event.changedTouches?.length) return event.changedTouches[0].clientX;
+    return event.clientX;
+  };
+
+  const setRadarValue = (clientX) => {
+    const rect = input.getBoundingClientRect();
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const step = Number(input.step) || 1;
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const next = Math.round((min + percent * (max - min)) / step) * step;
+    input.value = String(Math.max(min, Math.min(max, next)));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  const stop = (event) => {
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+  };
+
+  const handleStartOrMove = (event) => {
+    if (event.type === "pointermove" && event.buttons === 0) return;
+    event.preventDefault();
+    stop(event);
+    holdMap();
+    setRadarValue(clientXFromEvent(event));
+  };
+
+  ["pointerdown", "pointermove", "mousedown", "click"].forEach((eventName) => {
+    radar.addEventListener(eventName, stop, true);
+    input.addEventListener(eventName, stop, true);
+  });
+
+  ["touchstart", "touchmove"].forEach((eventName) => {
+    radar.addEventListener(eventName, handleStartOrMove, { capture: true, passive: false });
+    input.addEventListener(eventName, handleStartOrMove, { capture: true, passive: false });
+  });
+
+  radar.addEventListener("pointerdown", handleStartOrMove, true);
+  input.addEventListener("pointerdown", handleStartOrMove, true);
+
+  ["pointerup", "pointercancel", "touchend", "touchcancel", "mouseup"].forEach((eventName) => {
+    window.addEventListener(eventName, releaseMap, { passive: true });
   });
 }
 
 function makeSheetHeaderDraggable() {
-  const header = document.querySelector(".sheet-header");
-  if (!header) return;
+  const surfaces = [document.querySelector("#sheetHandle"), document.querySelector(".sheet-header")].filter(Boolean);
+  if (!surfaces.length) return;
 
   let startY = 0;
   let startHeight = 0;
 
-  header.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("button")) return;
+  const begin = (clientY, target) => {
+    if (target.closest("button") && !target.closest("#sheetHandle")) return false;
     state.sheetDragging = true;
-    startY = event.clientY;
+    startY = clientY;
     startHeight = state.sheetHeight;
     sheet.classList.add("dragging");
-    header.setPointerCapture(event.pointerId);
-  });
+    return true;
+  };
 
-  header.addEventListener("pointermove", (event) => {
+  const move = (clientY) => {
     if (!state.sheetDragging) return;
-    setSheetHeight(startHeight + startY - event.clientY, false);
-  });
+    setSheetHeight(startHeight + startY - clientY, false);
+  };
 
-  const finish = (event) => {
+  const finish = () => {
     if (!state.sheetDragging) return;
     state.sheetDragging = false;
     sheet.classList.remove("dragging");
-    header.releasePointerCapture(event.pointerId);
     snapSheet();
   };
 
-  header.addEventListener("pointerup", finish);
-  header.addEventListener("pointercancel", finish);
+  surfaces.forEach((surface) => {
+    surface.addEventListener("pointerdown", (event) => {
+      if (!begin(event.clientY, event.target)) return;
+      surface.setPointerCapture?.(event.pointerId);
+    });
+
+    surface.addEventListener("pointermove", (event) => move(event.clientY));
+
+    surface.addEventListener("pointerup", (event) => {
+      surface.releasePointerCapture?.(event.pointerId);
+      finish();
+    });
+
+    surface.addEventListener("pointercancel", finish);
+
+    surface.addEventListener(
+      "touchstart",
+      (event) => {
+        if (!event.touches.length || !begin(event.touches[0].clientY, event.target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      { passive: false },
+    );
+
+    surface.addEventListener(
+      "touchmove",
+      (event) => {
+        if (!event.touches.length || !state.sheetDragging) return;
+        event.preventDefault();
+        event.stopPropagation();
+        move(event.touches[0].clientY);
+      },
+      { passive: false },
+    );
+
+    surface.addEventListener("touchend", finish);
+    surface.addEventListener("touchcancel", finish);
+  });
 }
 
 function installLongPressCreate() {
@@ -96,6 +187,34 @@ function installLongPressCreate() {
     start = null;
   };
 
+  const begin = (clientX, clientY, target) => {
+    if (isControlTarget(target)) return;
+    start = { x: clientX, y: clientY };
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      const latlng = screenPointToLatLng(start.x, start.y, currentZoom);
+      clear();
+      openCreateDialog(latlng);
+    }, 650);
+  };
+
+  const cancelIfMoved = (clientX, clientY) => {
+    if (!start) return;
+    if (Math.abs(clientX - start.x) + Math.abs(clientY - start.y) > 10) {
+      clear();
+    }
+  };
+
+  mapNode.addEventListener(
+    "contextmenu",
+    (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+    },
+    true,
+  );
+
   mapNode.addEventListener(
     "click",
     (event) => {
@@ -107,33 +226,28 @@ function installLongPressCreate() {
     true,
   );
 
+  mapNode.addEventListener("pointerdown", (event) => begin(event.clientX, event.clientY, event.target), true);
+  mapNode.addEventListener("pointermove", (event) => cancelIfMoved(event.clientX, event.clientY), true);
+
   mapNode.addEventListener(
-    "pointerdown",
+    "touchstart",
     (event) => {
-      if (isControlTarget(event.target)) return;
-      start = { x: event.clientX, y: event.clientY };
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        const latlng = screenPointToLatLng(start.x, start.y, currentZoom);
-        clear();
-        openCreateDialog(latlng);
-      }, 650);
+      if (!event.touches.length) return;
+      begin(event.touches[0].clientX, event.touches[0].clientY, event.target);
     },
-    true,
+    { capture: true, passive: true },
   );
 
   mapNode.addEventListener(
-    "pointermove",
+    "touchmove",
     (event) => {
-      if (!start) return;
-      if (Math.abs(event.clientX - start.x) + Math.abs(event.clientY - start.y) > 10) {
-        clear();
-      }
+      if (!event.touches.length) return;
+      cancelIfMoved(event.touches[0].clientX, event.touches[0].clientY);
     },
-    true,
+    { capture: true, passive: true },
   );
 
-  ["pointerup", "pointercancel", "mouseleave"].forEach((eventName) => {
+  ["pointerup", "pointercancel", "mouseleave", "touchend", "touchcancel"].forEach((eventName) => {
     mapNode.addEventListener(eventName, clear, true);
   });
 }
