@@ -1,9 +1,9 @@
 let mobileSheetLockReleased = false;
-const MOBILE_SHEET_MIN = 102;
+const MOBILE_SHEET_MIN = 92;
 
 (function installMobileInteractionFixes() {
-  document.documentElement.dataset.mobileFixVersion = "24";
-  console.info("Local Meetup mobile fixes v24 active");
+  document.documentElement.dataset.mobileFixVersion = "25";
+  console.info("Local Meetup mobile fixes v25 active");
 
   const labels = {
     sport: "🏀 Sport",
@@ -48,11 +48,15 @@ function installCompactSheetChrome() {
     style.textContent = `
       .sheet {
         min-height: ${MOBILE_SHEET_MIN}px !important;
-        padding-top: 7px !important;
+        padding-top: 5px !important;
       }
 
       .sheet-handle {
-        margin-bottom: 8px !important;
+        margin-bottom: 3px !important;
+      }
+
+      .sheet.compact .sheet-handle {
+        margin-bottom: 3px !important;
       }
 
       .sheet.compact .sheet-header h2 {
